@@ -1,0 +1,32 @@
+[
+    {
+        "id": "q01",
+        "question": "My pod keeps restarting and kubectl shows an increasing restart count. Where do I start?",
+        "expected_documents": ["crashloopbackoff.md"],
+        "answerable": true
+    },
+    {
+        "id": "q02",
+        "question": "A container was killed with exit code 137. What does that tell me?",
+        "expected_documents": ["crashloopbackoff.md", "oomkilled.md"],
+        "answerable": true
+    },
+    {
+        "id": "q03",
+        "question": "The worker pod crashes at startup with a database connection timeout. How should I troubleshoot?",
+        "expected_documents": ["database-connectivity.md", "crashloopbackoff.md"],
+        "answerable": true
+    },
+    {
+        "id": "q04",
+        "question": "How do I configure partitions and replication for a Kafka topic?",
+        "expected_documents": [],
+        "answerable": false
+    },
+    {
+        "id": "q05",
+        "question": "What is the best way to price a SaaS subscription?",
+        "expected_documents": [],
+        "answerable": false
+    }
+]
