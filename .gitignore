@@ -6,7 +6,7 @@
 # Python virtual environment
 .venv/
 venv/
-
+.venv-rag312/
 # Python generated files
 __pycache__/
 *.py[cod]
