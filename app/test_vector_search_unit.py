@@ -1,3 +1,5 @@
+"""Unit tests for app.vector_search.search_chunks."""
+
 import numpy as np
 import pytest
 
@@ -12,6 +14,7 @@ class FakeModel:
 
 
 def make_chunk(source, section, content, embedding):
+    """Build an embedded chunk dictionary for tests."""
     return {
         "source": source,
         "section": section,
@@ -41,6 +44,7 @@ def test_search_ranks_most_similar_chunk_first():
         embedded_chunks=chunks,
         model=FakeModel(),
         top_k=2,
+        min_score=-1.0,
     )
 
     assert results[0]["source"] == "crashloopbackoff.md"
@@ -60,6 +64,7 @@ def test_top_k_limits_results():
         embedded_chunks=chunks,
         model=FakeModel(),
         top_k=2,
+        min_score=-1.0,
     )
 
     assert len(results) == 2
@@ -78,7 +83,7 @@ def test_empty_chunks_return_empty_list():
 def test_empty_query_is_rejected():
     with pytest.raises(ValueError, match="Query cannot be empty"):
         search_chunks(
-            query="   ",
+            query=" ",
             embedded_chunks=[],
             model=FakeModel(),
         )
@@ -92,6 +97,61 @@ def test_invalid_top_k_is_rejected():
             model=FakeModel(),
             top_k=0,
         )
+
+
+def test_invalid_min_score_is_rejected():
+    for invalid_score in (-1.1, 1.1):
+        with pytest.raises(
+            ValueError,
+            match="min_score must be between -1.0 and 1.0",
+        ):
+            search_chunks(
+                query="test query",
+                embedded_chunks=[],
+                model=FakeModel(),
+                min_score=invalid_score,
+            )
+
+
+def test_chunks_below_min_score_are_filtered():
+    chunks = [
+        make_chunk("relevant.md", "Relevant", "Relevant content", [1.0, 0.0]),
+        make_chunk("unrelated.md", "Unrelated", "Unrelated content", [0.0, 1.0]),
+        make_chunk("opposite.md", "Opposite", "Opposite content", [-1.0, 0.0]),
+    ]
+
+    results = search_chunks(
+        query="test query",
+        embedded_chunks=chunks,
+        model=FakeModel(),
+        top_k=3,
+        min_score=0.5,
+    )
+
+    assert len(results) == 1
+    assert results[0]["source"] == "relevant.md"
+    assert results[0]["score"] == pytest.approx(1.0)
+
+
+def test_chunks_at_min_score_are_retained():
+    chunks = [
+        make_chunk(
+            "boundary.md",
+            "Boundary",
+            "Boundary content",
+            [0.5, np.sqrt(0.75)],
+        ),
+    ]
+
+    results = search_chunks(
+        query="test query",
+        embedded_chunks=chunks,
+        model=FakeModel(),
+        min_score=0.5,
+    )
+
+    assert len(results) == 1
+    assert results[0]["score"] == pytest.approx(0.5)
 
 
 def test_metadata_is_preserved():
