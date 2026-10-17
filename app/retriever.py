@@ -9,6 +9,7 @@ def retrieve(
     query: str,
     model: SentenceTransformer,
     top_k: int = 3,
+    min_score: float = 0.50,
 ) -> list[dict]:
     """Retrieve relevant knowledge chunks for a user's question."""
 
@@ -18,15 +19,17 @@ def retrieve(
     if top_k <= 0:
         raise ValueError("top_k must be greater than zero.")
 
-    # Load the persisted document chunks and embeddings.
+    if not -1.0 <= min_score <= 1.0:
+        raise ValueError("min_score must be between -1.0 and 1.0.")
+
     embedded_chunks = load_index()
 
-    # Search the index using the existing similarity-search component.
     return search_chunks(
         query=query,
         embedded_chunks=embedded_chunks,
         model=model,
         top_k=top_k,
+        min_score=min_score,
     )
 
 
@@ -44,6 +47,7 @@ def main() -> None:
         query=query,
         model=model,
         top_k=3,
+        min_score=0.35,
     )
 
     if not results:

@@ -73,3 +73,40 @@ Show recent events in the namespace, newest last:
 - oomkilled.md
 - kubernetes-readiness-probes.md
 - application-rollback.md
+
+## Troubleshooting Missing ConfigMaps and Secrets
+
+Use this section when a Kubernetes application fails to start because a referenced ConfigMap, Secret, environment variable, or configuration key is missing or incorrect.
+
+### Check for Missing Configuration References
+
+Identify the affected pod and namespace:
+
+    kubectl describe pod <pod-name> -n <namespace>
+
+Inspect the Events section for messages indicating that a ConfigMap or Secret was not found, a required key is missing, or a volume could not be mounted.
+
+List ConfigMaps and Secrets in the application's namespace:
+
+    kubectl get configmaps -n <namespace>
+    kubectl get secrets -n <namespace>
+
+Verify that each ConfigMap and Secret referenced by the Deployment exists in the same namespace as the workload.
+
+Inspect the Deployment configuration:
+
+    kubectl get deployment <deployment-name> -n <namespace> -o yaml
+
+Check `env`, `envFrom`, `configMapKeyRef`, `secretKeyRef`, and configuration volume references. Confirm that referenced object names and required key names match the actual ConfigMaps and Secrets.
+
+For environment variables marked as required, verify that the application receives the expected variable names. Do not print, expose, or share secret values.
+
+### Remediate Missing Configuration
+
+- Create or restore the missing ConfigMap or Secret through the approved deployment workflow.
+- Correct invalid object names, key names, or namespace references.
+- Ensure that required configuration keys exist.
+- Redeploy or restart the workload when necessary for updated configuration to take effect.
+- Verify that the pod starts successfully and inspect its logs for remaining errors.
+
+If the pod continues restarting after configuration is corrected, review its current logs and previous container logs to identify the next failure.

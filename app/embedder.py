@@ -16,12 +16,20 @@ def embed_chunks(
     chunks: list[dict[str, str]],
     model: SentenceTransformer,
 ) -> list[dict]:
-    """Generate an embedding vector for every document chunk."""
+    """Generate embeddings using both section context and chunk content."""
 
     if not chunks:
         return []
 
-    texts = [chunk["content"] for chunk in chunks]
+    texts = [
+        (
+            f"Section: {chunk['section'].lstrip('#').strip()}\n\n"
+            f"{chunk['content']}"
+            if chunk["section"]
+            else chunk["content"]
+        )
+        for chunk in chunks
+    ]
 
     vectors = model.encode(
         texts,

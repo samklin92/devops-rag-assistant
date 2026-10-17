@@ -28,5 +28,65 @@
         "question": "What is the best way to price a SaaS subscription?",
         "expected_documents": [],
         "answerable": false
+    },
+    {
+        "id": "q06",
+        "question": "Which kubectl command shows the previous logs of a crashed container?",
+        "expected_documents": ["crashloopbackoff.md"],
+        "answerable": true
+    },
+    {
+        "id": "q07",
+        "question": "My container keeps restarting because its liveness probe fails. What should I investigate?",
+        "expected_documents": ["crashloopbackoff.md"],
+        "answerable": true
+    },
+    {
+        "id": "q08",
+        "question": "What should I check if a Kubernetes application references a missing ConfigMap or Secret?",
+        "expected_documents": ["crashloopbackoff.md"],
+        "answerable": true
+    },
+    {
+        "id": "q09",
+        "question": "My application cannot resolve its database hostname. How should I troubleshoot DNS?",
+        "expected_documents": ["database-connectivity.md"],
+        "answerable": true
+    },
+    {
+        "id": "q10",
+        "question": "The database connection is refused. What should I inspect before changing network settings?",
+        "expected_documents": ["database-connectivity.md"],
+        "answerable": true
+    },
+    {
+        "id": "q11",
+        "question": "How can I investigate database authentication failures without exposing passwords?",
+        "expected_documents": ["database-connectivity.md"],
+        "answerable": true
+    },
+    {
+        "id": "q12",
+        "question": "How do Kubernetes memory requests differ from memory limits, and how should I investigate OOMKilled?",
+        "expected_documents": ["oomkilled.md"],
+        "answerable": true
+    },
+    {
+        "id": "q13",
+        "question": "Which command can show current Kubernetes pod memory usage when Metrics Server is available?",
+        "expected_documents": ["oomkilled.md"],
+        "answerable": true
+    },
+    {
+        "id": "q14",
+        "question": "My application has database connection timeouts after a deployment. What configuration and connectivity checks should I perform?",
+        "expected_documents": ["database-connectivity.md"],
+        "answerable": true
+    },
+    {
+        "id": "q15",
+        "question": "How do I configure a Terraform remote backend and recover a stuck state lock?",
+        "expected_documents": [],
+        "answerable": false
     }
 ]

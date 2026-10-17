@@ -41,7 +41,7 @@ def test_retrieve_returns_search_results(monkeypatch):
         lambda: chunks,
     )
 
-    def fake_search(query, embedded_chunks, model, top_k):
+    def fake_search(query, embedded_chunks, model, top_k, min_score=0.50):
         assert query == "Why is my pod restarting?"
         assert embedded_chunks == chunks
         assert top_k == 3
@@ -71,7 +71,7 @@ def test_retrieve_passes_top_k_to_search(monkeypatch):
         lambda: chunks,
     )
 
-    def fake_search(query, embedded_chunks, model, top_k):
+    def fake_search(query, embedded_chunks, model, top_k, min_score=0.50):
         captured["top_k"] = top_k
         return []
 
@@ -118,7 +118,7 @@ def test_retrieve_returns_empty_for_empty_index(monkeypatch):
         lambda: [],
     )
 
-    def fake_search(query, embedded_chunks, model, top_k):
+    def fake_search(query, embedded_chunks, model, top_k, min_score=0.50):
         return []
 
     monkeypatch.setattr(

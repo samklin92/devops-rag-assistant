@@ -73,7 +73,10 @@ def evaluate_retrieval(
     }
 
 
-def run_evaluation(top_k: int = 3) -> list[dict]:
+def run_evaluation(
+    top_k: int = 3,
+    min_score: float = 0.35,
+) -> list[dict]:
     """Evaluate retrieval against the complete question dataset."""
 
     from app.embedder import create_embedder
@@ -92,6 +95,7 @@ def run_evaluation(top_k: int = 3) -> list[dict]:
             query=question["question"],
             model=model,
             top_k=top_k,
+            min_score=min_score,
         )
 
         result = evaluate_retrieval(
