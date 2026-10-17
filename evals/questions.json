@@ -8,13 +8,13 @@
     {
         "id": "q02",
         "question": "A container was killed with exit code 137. What does that tell me?",
-        "expected_documents": ["crashloopbackoff.md", "oomkilled.md"],
+        "expected_documents": ["oomkilled.md"],
         "answerable": true
     },
     {
         "id": "q03",
         "question": "The worker pod crashes at startup with a database connection timeout. How should I troubleshoot?",
-        "expected_documents": ["database-connectivity.md", "crashloopbackoff.md"],
+        "expected_documents": ["crashloopbackoff.md", "database-connectivity.md"],
         "answerable": true
     },
     {
