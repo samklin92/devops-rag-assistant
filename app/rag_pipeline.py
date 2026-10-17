@@ -1,7 +1,8 @@
-"""RAG pipeline: retrieve relevant chunks, then generate a grounded answer."""
+"""RAG pipeline: retrieve evidence, generate answers, and optionally evaluate grounding."""
 
 from sentence_transformers import SentenceTransformer
 
+from app.answer_grounding import evaluate_answer_grounding
 from app.embedder import create_embedder
 from app.generator import create_client, generate_answer
 from app.retriever import retrieve
@@ -12,8 +13,10 @@ def answer_question(
     embedding_model: SentenceTransformer,
     client,
     top_k: int = 3,
+    evaluate_grounding: bool = False,
 ) -> dict:
-    """Return a generated answer and its retrieved source metadata."""
+    """Generate a grounded answer and optionally evaluate its factual support."""
+
     if not question.strip():
         raise ValueError("Question cannot be empty.")
 
@@ -58,14 +61,27 @@ def answer_question(
             }
         )
 
+    # Step 4: Evaluate grounding only when explicitly requested.
+    grounding_evaluation = None
+
+    if evaluate_grounding and retrieved_chunks:
+        grounding_evaluation = evaluate_answer_grounding(
+            question=question,
+            answer=answer,
+            retrieved_chunks=retrieved_chunks,
+            client=client,
+        )
+
     return {
         "answer": answer,
         "sources": sources,
+        "grounding_evaluation": grounding_evaluation,
     }
 
 
 def main() -> None:
     """Run the complete RAG workflow from the command line."""
+
     question = input("Enter your DevOps question: ").strip()
 
     if not question:
@@ -84,6 +100,7 @@ def main() -> None:
         embedding_model=embedding_model,
         client=client,
         top_k=3,
+        evaluate_grounding=False,
     )
 
     print("\n" + "=" * 60)
@@ -107,6 +124,35 @@ def main() -> None:
             print(f"- Document: {source['source']}")
             print(f"  Section: {source['section']}")
             print(f"  Similarity: {score_text}")
+
+    if result["grounding_evaluation"] is not None:
+        evaluation = result["grounding_evaluation"]
+
+        print("\n" + "=" * 60)
+        print("ANSWER-GROUNDING EVALUATION")
+        print("=" * 60)
+        print(f"Grounded: {evaluation['grounded']}")
+        print(f"Claims evaluated: {evaluation['claim_count']}")
+        print(
+            "Supported claims: "
+            f"{evaluation['supported_claim_count']}"
+        )
+        print(
+            "Unsupported claims: "
+            f"{len(evaluation['unsupported_claims'])}"
+        )
+        print(
+            "Contradicted claims: "
+            f"{len(evaluation['contradicted_claims'])}"
+        )
+
+        for claim in (
+            evaluation["unsupported_claims"]
+            + evaluation["contradicted_claims"]
+        ):
+            print(f"- Claim: {claim['claim']}")
+            print(f"  Verdict: {claim['verdict']}")
+            print(f"  Reason: {claim['reason']}")
 
 
 if __name__ == "__main__":

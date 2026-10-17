@@ -123,3 +123,135 @@ def test_answer_question_rejects_invalid_top_k(top_k):
             client=FakeClient(),
             top_k=top_k,
         )
+
+def test_answer_question_skips_grounding_evaluation_by_default(
+    monkeypatch,
+):
+    captured = {}
+
+    monkeypatch.setattr(
+        rag_pipeline,
+        "retrieve",
+        lambda query, model, top_k: sample_chunks(),
+    )
+    monkeypatch.setattr(
+        rag_pipeline,
+        "generate_answer",
+        lambda question, retrieved_chunks, client: "Test answer.",
+    )
+
+    def unexpected_evaluation(**kwargs):
+        pytest.fail("Grounding evaluation should be disabled by default.")
+
+    monkeypatch.setattr(
+        rag_pipeline,
+        "evaluate_answer_grounding",
+        unexpected_evaluation,
+    )
+
+    result = rag_pipeline.answer_question(
+        question="Why is my pod restarting?",
+        embedding_model=FakeModel(),
+        client=FakeClient(),
+    )
+
+    assert result["answer"] == "Test answer."
+    assert result["grounding_evaluation"] is None
+
+
+def test_answer_question_runs_grounding_evaluation_when_enabled(
+    monkeypatch,
+):
+    chunks = sample_chunks()
+    captured = {}
+
+    def fake_retrieve(query, model, top_k):
+        return chunks
+
+    def fake_generate_answer(question, retrieved_chunks, client):
+        return "Inspect the previous container logs."
+
+    def fake_evaluate_answer_grounding(
+        question,
+        answer,
+        retrieved_chunks,
+        client,
+    ):
+        captured["question"] = question
+        captured["answer"] = answer
+        captured["retrieved_chunks"] = retrieved_chunks
+        captured["client"] = client
+
+        return {
+            "grounded": True,
+            "claims": [],
+            "unsupported_claims": [],
+            "contradicted_claims": [],
+            "claim_count": 0,
+            "supported_claim_count": 0,
+        }
+
+    monkeypatch.setattr(rag_pipeline, "retrieve", fake_retrieve)
+    monkeypatch.setattr(
+        rag_pipeline,
+        "generate_answer",
+        fake_generate_answer,
+    )
+    monkeypatch.setattr(
+        rag_pipeline,
+        "evaluate_answer_grounding",
+        fake_evaluate_answer_grounding,
+    )
+
+    model = FakeModel()
+    client = FakeClient()
+    question = "Why does my pod keep restarting?"
+
+    result = rag_pipeline.answer_question(
+        question=question,
+        embedding_model=model,
+        client=client,
+        evaluate_grounding=True,
+    )
+
+    assert result["grounding_evaluation"]["grounded"] is True
+    assert captured["question"] == question
+    assert captured["answer"] == "Inspect the previous container logs."
+    assert captured["retrieved_chunks"] == chunks
+    assert captured["client"] is client
+
+
+def test_answer_question_skips_grounding_when_no_chunks_are_retrieved(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        rag_pipeline,
+        "retrieve",
+        lambda query, model, top_k: [],
+    )
+    monkeypatch.setattr(
+        rag_pipeline,
+        "generate_answer",
+        lambda question, retrieved_chunks, client: (
+            "I could not find relevant information."
+        ),
+    )
+
+    def unexpected_evaluation(**kwargs):
+        pytest.fail("Cannot evaluate grounding without retrieved evidence.")
+
+    monkeypatch.setattr(
+        rag_pipeline,
+        "evaluate_answer_grounding",
+        unexpected_evaluation,
+    )
+
+    result = rag_pipeline.answer_question(
+        question="How much does a SaaS subscription cost?",
+        embedding_model=FakeModel(),
+        client=FakeClient(),
+        evaluate_grounding=True,
+    )
+
+    assert result["grounding_evaluation"] is None
+    assert result["sources"] == []
