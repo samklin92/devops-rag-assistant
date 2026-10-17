@@ -1,3 +1,5 @@
+"""Unit tests for app.rag_pipeline.answer_question."""
+
 import pytest
 
 from app import rag_pipeline
@@ -12,6 +14,7 @@ class FakeClient:
 
 
 def sample_chunks():
+    """Return one retrieved chunk in the format retrieval produces."""
     return [
         {
             "source": "crashloopbackoff.md",
@@ -38,11 +41,7 @@ def test_answer_question_connects_retrieval_and_generation(monkeypatch):
         captured["client"] = client
         return "Inspect the previous container logs."
 
-    monkeypatch.setattr(
-        rag_pipeline,
-        "retrieve",
-        fake_retrieve,
-    )
+    monkeypatch.setattr(rag_pipeline, "retrieve", fake_retrieve)
     monkeypatch.setattr(
         rag_pipeline,
         "generate_answer",
@@ -53,14 +52,21 @@ def test_answer_question_connects_retrieval_and_generation(monkeypatch):
     client = FakeClient()
     question = "Why does my Kubernetes pod keep restarting?"
 
-    answer = rag_pipeline.answer_question(
+    result = rag_pipeline.answer_question(
         question=question,
         embedding_model=model,
         client=client,
         top_k=3,
     )
 
-    assert answer == "Inspect the previous container logs."
+    assert result["answer"] == "Inspect the previous container logs."
+    assert result["sources"] == [
+        {
+            "source": "crashloopbackoff.md",
+            "section": "Diagnostic Commands",
+            "score": 0.85,
+        }
+    ]
     assert captured["query"] == question
     assert captured["question"] == question
     assert captured["model"] is model
@@ -76,12 +82,7 @@ def test_answer_question_passes_custom_top_k(monkeypatch):
         captured["top_k"] = top_k
         return sample_chunks()
 
-    monkeypatch.setattr(
-        rag_pipeline,
-        "retrieve",
-        fake_retrieve,
-    )
-
+    monkeypatch.setattr(rag_pipeline, "retrieve", fake_retrieve)
     monkeypatch.setattr(
         rag_pipeline,
         "generate_answer",
@@ -104,7 +105,7 @@ def test_answer_question_rejects_empty_question():
         match="Question cannot be empty",
     ):
         rag_pipeline.answer_question(
-            question="   ",
+            question=" ",
             embedding_model=FakeModel(),
             client=FakeClient(),
         )
