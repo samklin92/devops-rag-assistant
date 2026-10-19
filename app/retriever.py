@@ -9,7 +9,7 @@ def retrieve(
     query: str,
     model: SentenceTransformer,
     top_k: int = 3,
-    min_score: float = 0.50,
+    min_score: float = 0.40,
 ) -> list[dict]:
     """Retrieve relevant knowledge chunks for a user's question."""
 
