@@ -164,32 +164,36 @@ def run_evaluation(
                 f"{result['missing_documents']}"
             )
 
-        # Summarize retrieval evaluation results.
-        summary = summarize_evaluation(results)
+    # Summarize results only after every question has been evaluated.
+    summary = summarize_evaluation(results)
 
-        if summary["mean_recall"] is not None:
-         print(
+    if summary["mean_recall"] is not None:
+        print(
             f"\nMean Recall@{top_k}: "
             f"{summary['mean_recall']:.2f}"
         )
-        else:
-         print("\nMean Recall: N/A (no answerable questions)")
+    else:
+        print("\nMean Recall: N/A (no answerable questions)")
 
-        if summary["unanswerable_retrieval_rate"] is not None:
-         print(
+    if summary["unanswerable_retrieval_rate"] is not None:
+        print(
             "Unanswerable retrieval rate: "
             f"{summary['unanswerable_retrieval_rate']:.2f}"
         )
-        else:
-         print("Unanswerable retrieval rate: N/A")
+    else:
+        print("Unanswerable retrieval rate: N/A")
 
-        print(
+    print(
         f"Questions evaluated: {summary['total_questions']} "
         f"(answerable: {summary['answerable_questions']}, "
         f"unanswerable: {summary['unanswerable_questions']})"
-       )
+    )
 
-        return results
+    return results
+
+
+    if __name__ == "__main__":
+     run_evaluation()
 
     # Measure how often unanswerable questions still retrieve documents.
     unanswerable_results = [
