@@ -80,3 +80,45 @@ def test_missing_expected_documents_are_reported(
     )
 
     assert result["missing_documents"] == ["oomkilled.md"]
+
+def test_summarize_evaluation_calculates_metrics():
+    results = [
+        {
+            "answerable": True,
+            "recall": 1.0,
+            "retrieved_documents": ["crashloopbackoff.md"],
+        },
+        {
+            "answerable": True,
+            "recall": 0.5,
+            "retrieved_documents": ["oomkilled.md"],
+        },
+        {
+            "answerable": False,
+            "recall": None,
+            "retrieved_documents": [],
+        },
+        {
+            "answerable": False,
+            "recall": None,
+            "retrieved_documents": ["database-connectivity.md"],
+        },
+    ]
+
+    summary = evaluator.summarize_evaluation(results)
+
+    assert summary["total_questions"] == 4
+    assert summary["answerable_questions"] == 2
+    assert summary["unanswerable_questions"] == 2
+    assert summary["mean_recall"] == 0.75
+    assert summary["unanswerable_retrieval_rate"] == 0.5
+
+
+def test_summarize_evaluation_handles_empty_results():
+    summary = evaluator.summarize_evaluation([])
+
+    assert summary["total_questions"] == 0
+    assert summary["answerable_questions"] == 0
+    assert summary["unanswerable_questions"] == 0
+    assert summary["mean_recall"] is None
+    assert summary["unanswerable_retrieval_rate"] is None

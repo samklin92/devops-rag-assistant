@@ -72,6 +72,49 @@ def evaluate_retrieval(
         "recall": recall,
     }
 
+def summarize_evaluation(results: list[dict]) -> dict:
+    """Summarize retrieval evaluation results across questions."""
+
+    answerable_results = [
+        result
+        for result in results
+        if result["answerable"]
+    ]
+
+    unanswerable_results = [
+        result
+        for result in results
+        if not result["answerable"]
+    ]
+
+    recalls = [
+        result["recall"]
+        for result in answerable_results
+        if result["recall"] is not None
+    ]
+
+    mean_recall = (
+        sum(recalls) / len(recalls)
+        if recalls
+        else None
+    )
+
+    unanswerable_retrieval_rate = (
+        sum(
+            bool(result["retrieved_documents"])
+            for result in unanswerable_results
+        ) / len(unanswerable_results)
+        if unanswerable_results
+        else None
+    )
+
+    return {
+        "total_questions": len(results),
+        "answerable_questions": len(answerable_results),
+        "unanswerable_questions": len(unanswerable_results),
+        "mean_recall": mean_recall,
+        "unanswerable_retrieval_rate": unanswerable_retrieval_rate,
+    }
 
 def run_evaluation(
     top_k: int = 3,
@@ -121,22 +164,32 @@ def run_evaluation(
                 f"{result['missing_documents']}"
             )
 
-    # Calculate mean Recall@K for answerable questions.
-    answerable_results = [
-        result
-        for result in results
-        if result["answerable"]
-    ]
+        # Summarize retrieval evaluation results.
+        summary = summarize_evaluation(results)
 
-    if answerable_results:
-        mean_recall = sum(
-            result["recall"]
-            for result in answerable_results
-        ) / len(answerable_results)
+        if summary["mean_recall"] is not None:
+         print(
+            f"\nMean Recall@{top_k}: "
+            f"{summary['mean_recall']:.2f}"
+        )
+        else:
+         print("\nMean Recall: N/A (no answerable questions)")
 
-        print(f"\nMean Recall@{top_k}: {mean_recall:.2f}")
-    else:
-        print("\nMean Recall: N/A (no answerable questions)")
+        if summary["unanswerable_retrieval_rate"] is not None:
+         print(
+            "Unanswerable retrieval rate: "
+            f"{summary['unanswerable_retrieval_rate']:.2f}"
+        )
+        else:
+         print("Unanswerable retrieval rate: N/A")
+
+        print(
+        f"Questions evaluated: {summary['total_questions']} "
+        f"(answerable: {summary['answerable_questions']}, "
+        f"unanswerable: {summary['unanswerable_questions']})"
+       )
+
+        return results
 
     # Measure how often unanswerable questions still retrieve documents.
     unanswerable_results = [
