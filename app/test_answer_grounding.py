@@ -279,3 +279,42 @@ def test_evaluate_answer_grounding_marks_empty_claims_inconclusive():
     assert result["supported_claim_count"] == 0
     assert result["unsupported_claims"] == []
     assert result["contradicted_claims"] == []
+
+def test_evaluator_can_miss_an_unsupported_claim():
+    response = {
+        "claims": [
+            {
+                "claim": "Exit code 137 indicates SIGKILL.",
+                "verdict": "supported",
+                "reason": "The retrieved evidence supports this claim.",
+            }
+        ]
+    }
+
+    client = FakeClient(json.dumps(response))
+
+    result = evaluate_answer_grounding(
+        question="What does exit code 137 mean?",
+        answer=(
+            "Exit code 137 indicates SIGKILL. "
+            "The database password is incorrect."
+        ),
+        retrieved_chunks=sample_chunks(),
+        client=client,
+    )
+
+    # This documents the current limitation:
+    # the evaluator omitted the unsupported database-password claim.
+    assert result["grounded"] is True
+    assert result["claim_count"] == 1
+    assert result["unsupported_claims"] == []
+
+def test_evaluation_prompt_requires_complete_claim_coverage():
+    from app.answer_grounding import EVALUATION_SYSTEM_PROMPT
+
+    prompt = EVALUATION_SYSTEM_PROMPT.lower()
+
+    assert "entire answer" in prompt
+    assert "every meaningful factual claim" in prompt
+    assert "do not omit a factual claim" in prompt
+    assert "review the original answer" in prompt
