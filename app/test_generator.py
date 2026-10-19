@@ -154,3 +154,73 @@ def test_generate_answer_handles_empty_retrieved_content():
 
     assert "could not find usable evidence" in answer.lower()
     assert client.messages.calls == []
+
+def test_context_budget_includes_complete_chunks_that_fit():
+    chunks = [
+        {
+            "source": "crashloopbackoff.md",
+            "section": "Diagnostics",
+            "content": "A" * 100,
+            "score": 0.95,
+        },
+        {
+            "source": "database-connectivity.md",
+            "section": "Troubleshooting",
+            "content": "B" * 100,
+            "score": 0.80,
+        },
+    ]
+
+    fake_client = FakeClient()
+
+    generate_answer(
+        question="How do I troubleshoot this issue?",
+        retrieved_chunks=chunks,
+        client=fake_client,
+        max_context_chars=180,
+    )
+
+    sent_prompt = fake_client.messages.calls[0]["messages"][0]["content"]
+
+    assert "Source: crashloopbackoff.md" in sent_prompt
+    assert "Section: Diagnostics" in sent_prompt
+    assert "A" * 100 in sent_prompt
+
+    # The second chunk must not be partially included.
+    assert "Source: database-connectivity.md" not in sent_prompt
+    assert "B" * 100 not in sent_prompt
+
+
+def test_context_budget_returns_safe_message_when_no_chunk_fits():
+    chunks = [
+        {
+            "source": "crashloopbackoff.md",
+            "section": "Diagnostics",
+            "content": "A" * 100,
+            "score": 0.95,
+        }
+    ]
+
+    fake_client = FakeClient()
+
+    answer = generate_answer(
+        question="How do I troubleshoot this issue?",
+        retrieved_chunks=chunks,
+        client=fake_client,
+        max_context_chars=50,
+    )
+
+    assert "could not find usable evidence" in answer.lower()
+    assert fake_client.messages.calls == []
+
+
+def test_context_budget_must_be_positive():
+    fake_client = FakeClient()
+
+    with pytest.raises(ValueError, match="max_context_chars"):
+        generate_answer(
+            question="How do I troubleshoot this issue?",
+            retrieved_chunks=sample_chunks(),
+            client=fake_client,
+            max_context_chars=0,
+        )

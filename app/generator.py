@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
+DEFAULT_MAX_CONTEXT_CHARS = 6000
 
 
 def create_client() -> anthropic.Anthropic:
@@ -28,11 +29,18 @@ def generate_answer(
     client: anthropic.Anthropic,
     model: str = DEFAULT_MODEL,
     max_tokens: int = 800,
+    max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS,
 ) -> str:
     """Generate an answer grounded in retrieved knowledge-base evidence."""
 
     if not question.strip():
         raise ValueError("Question cannot be empty.")
+
+    if max_tokens <= 0:
+        raise ValueError("max_tokens must be greater than zero.")
+
+    if max_context_chars <= 0:
+        raise ValueError("max_context_chars must be greater than zero.")
 
     if not retrieved_chunks:
         return (
@@ -40,24 +48,33 @@ def generate_answer(
             "to answer this question."
         )
 
-    if max_tokens <= 0:
-        raise ValueError("max_tokens must be greater than zero.")
-
     context_parts = []
+    context_chars = 0
 
     for chunk in retrieved_chunks:
         source = chunk.get("source", "Unknown source")
         section = chunk.get("section", "Unknown section")
         content = chunk.get("content", "")
 
-        if not content.strip():
+        if not isinstance(content, str) or not content.strip():
             continue
 
-        context_parts.append(
+        context_part = (
             f"Source: {source}\n"
             f"Section: {section}\n"
             f"Content:\n{content}"
         )
+
+        # Account for the separator between context chunks.
+        separator = "\n\n---\n\n" if context_parts else ""
+        required_chars = len(separator) + len(context_part)
+
+        # Preserve complete chunks and their metadata.
+        if context_chars + required_chars > max_context_chars:
+            break
+
+        context_parts.append(context_part)
+        context_chars += required_chars
 
     if not context_parts:
         return (
