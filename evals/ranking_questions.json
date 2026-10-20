@@ -9,18 +9,22 @@
     ]
   },
   {
-  "id": "q02",
-  "relevant_sections": [
-    {
-      "source": "oomkilled.md",
-      "section": "2. Inspect termination details"
-    },
-    {
-      "source": "oomkilled.md",
-      "section": "Troubleshooting Notes"
-    }
-  ]
- },
+    "id": "q02",
+    "relevant_sections": [
+      {
+        "source": "oomkilled.md",
+        "section": "Overview"
+      },
+      {
+        "source": "oomkilled.md",
+        "section": "2. Inspect termination details"
+      },
+      {
+        "source": "oomkilled.md",
+        "section": "Troubleshooting Notes"
+      }
+    ]
+  },
   {
     "id": "q03",
     "relevant_sections": [
