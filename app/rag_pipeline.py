@@ -1,10 +1,11 @@
 """RAG pipeline: retrieve evidence, generate answers, and optionally evaluate grounding."""
 
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import CrossEncoder, SentenceTransformer
 
 from app.answer_grounding import evaluate_answer_grounding
 from app.embedder import create_embedder
 from app.generator import create_client, generate_answer
+from app.reranker import DEFAULT_RERANKER_MODEL, rerank_chunks
 from app.retriever import retrieve
 
 
@@ -14,38 +15,63 @@ def answer_question(
     client,
     top_k: int = 3,
     evaluate_grounding: bool = False,
+    use_reranker: bool = False,
+    candidate_k: int = 10,
+    reranker_model: CrossEncoder | None = None,
 ) -> dict:
     """Generate a grounded answer and optionally evaluate its factual support."""
-
     if not question.strip():
         raise ValueError("Question cannot be empty.")
 
     if top_k <= 0:
         raise ValueError("top_k must be greater than zero.")
 
-    # Step 1: Retrieve relevant chunks from the persisted vector index.
+    if use_reranker:
+        if candidate_k <= 0:
+            raise ValueError("candidate_k must be greater than zero.")
+
+        if candidate_k < top_k:
+            raise ValueError(
+                "candidate_k must be greater than or equal to top_k."
+            )
+
+        if reranker_model is None:
+            raise ValueError(
+                "reranker_model must be supplied when use_reranker=True."
+            )
+
+    # Step 1: Retrieve candidate chunks using vector similarity.
+    retrieval_k = candidate_k if use_reranker else top_k
+
     retrieved_chunks = retrieve(
         query=question,
         model=embedding_model,
-        top_k=top_k,
+        top_k=retrieval_k,
     )
 
-    # Step 2: Generate an answer using the retrieved evidence.
+    # Step 2: Optionally rerank candidates before generating the answer.
+    if use_reranker and retrieved_chunks:
+        retrieved_chunks = rerank_chunks(
+            query=question,
+            chunks=retrieved_chunks,
+            model=reranker_model,
+            top_k=top_k,
+        )
+
+    # Step 3: Generate an answer using the selected evidence.
     answer = generate_answer(
         question=question,
         retrieved_chunks=retrieved_chunks,
         client=client,
     )
 
-    # Step 3: Build source metadata directly from retrieved chunks.
+    # Step 4: Build source metadata directly from the selected chunks.
     sources = []
     seen_sources = set()
 
     for chunk in retrieved_chunks:
         source = chunk.get("source", "Unknown source")
         section = chunk.get("section", "Unknown section")
-
-        # Avoid listing the same source and section more than once.
         source_key = (source, section)
 
         if source_key in seen_sources:
@@ -58,10 +84,15 @@ def answer_question(
                 "source": source,
                 "section": section,
                 "score": chunk.get("score"),
+                **(
+                    {"rerank_score": chunk["rerank_score"]}
+                    if "rerank_score" in chunk
+                    else {}
+                ),
             }
         )
 
-    # Step 4: Evaluate grounding only when explicitly requested.
+    # Step 5: Evaluate grounding only when explicitly requested.
     grounding_evaluation = None
 
     if evaluate_grounding and retrieved_chunks:
@@ -81,7 +112,6 @@ def answer_question(
 
 def main() -> None:
     """Run the complete RAG workflow from the command line."""
-
     question = input("Enter your DevOps question: ").strip()
 
     if not question:
@@ -93,6 +123,14 @@ def main() -> None:
     print("Connecting to the LLM provider...")
     client = create_client()
 
+    # Optional configuration: enable reranking by setting this to True.
+    use_reranking = False
+    reranker_model = None
+
+    if use_reranking:
+        print(f"Loading reranker: {DEFAULT_RERANKER_MODEL}")
+        reranker_model = CrossEncoder(DEFAULT_RERANKER_MODEL)
+
     print("Retrieving knowledge and generating an answer...")
 
     result = answer_question(
@@ -101,6 +139,9 @@ def main() -> None:
         client=client,
         top_k=3,
         evaluate_grounding=False,
+        use_reranker=use_reranking,
+        candidate_k=10,
+        reranker_model=reranker_model,
     )
 
     print("\n" + "=" * 60)
@@ -123,7 +164,10 @@ def main() -> None:
 
             print(f"- Document: {source['source']}")
             print(f"  Section: {source['section']}")
-            print(f"  Similarity: {score_text}")
+            print(f"  Vector similarity: {score_text}")
+
+            if "rerank_score" in source:
+                print(f"  Reranker score: {source['rerank_score']:.4f}")
 
     if result["grounding_evaluation"] is not None:
         evaluation = result["grounding_evaluation"]
@@ -133,18 +177,9 @@ def main() -> None:
         print("=" * 60)
         print(f"Grounded: {evaluation['grounded']}")
         print(f"Claims evaluated: {evaluation['claim_count']}")
-        print(
-            "Supported claims: "
-            f"{evaluation['supported_claim_count']}"
-        )
-        print(
-            "Unsupported claims: "
-            f"{len(evaluation['unsupported_claims'])}"
-        )
-        print(
-            "Contradicted claims: "
-            f"{len(evaluation['contradicted_claims'])}"
-        )
+        print(f"Supported claims: {evaluation['supported_claim_count']}")
+        print(f"Unsupported claims: {len(evaluation['unsupported_claims'])}")
+        print(f"Contradicted claims: {len(evaluation['contradicted_claims'])}")
 
         for claim in (
             evaluation["unsupported_claims"]

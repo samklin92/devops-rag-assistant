@@ -255,3 +255,132 @@ def test_answer_question_skips_grounding_when_no_chunks_are_retrieved(
 
     assert result["grounding_evaluation"] is None
     assert result["sources"] == []
+
+def test_answer_question_uses_vector_retrieval_by_default(monkeypatch):
+    captured = {}
+
+    def fake_retrieve(query, model, top_k):
+        captured["top_k"] = top_k
+        return sample_chunks()
+
+    monkeypatch.setattr(rag_pipeline, "retrieve", fake_retrieve)
+    monkeypatch.setattr(
+        rag_pipeline,
+        "generate_answer",
+        lambda question, retrieved_chunks, client: "Vector-only answer.",
+    )
+
+    result = rag_pipeline.answer_question(
+        question="Why is my pod restarting?",
+        embedding_model=FakeModel(),
+        client=FakeClient(),
+        top_k=2,
+    )
+
+    assert captured["top_k"] == 2
+    assert result["answer"] == "Vector-only answer."
+    assert "rerank_score" not in result["sources"][0]
+
+
+def test_answer_question_reranks_candidates_before_generation(monkeypatch):
+    chunks = [
+        {
+            "source": "first.md",
+            "section": "First",
+            "content": "First candidate.",
+            "score": 0.90,
+        },
+        {
+            "source": "second.md",
+            "section": "Second",
+            "content": "Second candidate.",
+            "score": 0.80,
+        },
+        {
+            "source": "third.md",
+            "section": "Third",
+            "content": "Third candidate.",
+            "score": 0.70,
+        },
+    ]
+    captured = {}
+    reranker_model = object()
+
+    def fake_retrieve(query, model, top_k):
+        captured["candidate_k"] = top_k
+        return chunks
+
+    def fake_rerank_chunks(query, chunks, model, top_k):
+        captured["reranker_query"] = query
+        captured["reranker_model"] = model
+        captured["reranker_top_k"] = top_k
+        return [
+            {**chunks[1], "rerank_score": 0.95},
+            {**chunks[0], "rerank_score": 0.40},
+        ][:top_k]
+
+    def fake_generate_answer(question, retrieved_chunks, client):
+        captured["generated_chunks"] = retrieved_chunks
+        return "Reranked answer."
+
+    monkeypatch.setattr(rag_pipeline, "retrieve", fake_retrieve)
+    monkeypatch.setattr(rag_pipeline, "rerank_chunks", fake_rerank_chunks)
+    monkeypatch.setattr(rag_pipeline, "generate_answer", fake_generate_answer)
+
+    question = "How do I investigate this issue?"
+    result = rag_pipeline.answer_question(
+        question=question,
+        embedding_model=FakeModel(),
+        client=FakeClient(),
+        top_k=2,
+        use_reranker=True,
+        candidate_k=3,
+        reranker_model=reranker_model,
+    )
+
+    assert captured["candidate_k"] == 3
+    assert captured["reranker_query"] == question
+    assert captured["reranker_model"] is reranker_model
+    assert captured["reranker_top_k"] == 2
+    assert [chunk["source"] for chunk in captured["generated_chunks"]] == [
+        "second.md",
+        "first.md",
+    ]
+    assert result["sources"][0]["rerank_score"] == 0.95
+
+
+def test_answer_question_requires_model_when_reranking_enabled():
+    with pytest.raises(
+        ValueError,
+        match="reranker_model must be supplied",
+    ):
+        rag_pipeline.answer_question(
+            question="How do I investigate this issue?",
+            embedding_model=FakeModel(),
+            client=FakeClient(),
+            use_reranker=True,
+        )
+
+
+@pytest.mark.parametrize(
+    ("top_k", "candidate_k", "message"),
+    [
+        (3, 0, "candidate_k must be greater than zero"),
+        (3, 2, "candidate_k must be greater than or equal to top_k"),
+    ],
+)
+def test_answer_question_rejects_invalid_reranking_configuration(
+    top_k,
+    candidate_k,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        rag_pipeline.answer_question(
+            question="How do I investigate this issue?",
+            embedding_model=FakeModel(),
+            client=FakeClient(),
+            top_k=top_k,
+            use_reranker=True,
+            candidate_k=candidate_k,
+            reranker_model=object(),
+        )
