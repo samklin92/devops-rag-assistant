@@ -1,0 +1,122 @@
+[
+  {
+    "id": "q01",
+    "relevant_sections": [
+      {
+        "source": "crashloopbackoff.md",
+        "section": "Symptoms for CrashLoopBackOff"
+      }
+    ]
+  },
+  {
+  "id": "q02",
+  "relevant_sections": [
+    {
+      "source": "oomkilled.md",
+      "section": "2. Inspect termination details"
+    },
+    {
+      "source": "oomkilled.md",
+      "section": "Troubleshooting Notes"
+    }
+  ]
+ },
+  {
+    "id": "q03",
+    "relevant_sections": [
+      {
+        "source": "crashloopbackoff.md",
+        "section": "Troubleshooting Steps for CrashLoopBackOff"
+      },
+      {
+        "source": "database-connectivity.md",
+        "section": "7. Investigate Timeouts and Connection Limits"
+      }
+    ]
+  },
+  {
+    "id": "q06",
+    "relevant_sections": [
+      {
+        "source": "crashloopbackoff.md",
+        "section": "Diagnostic Commands for CrashLoopBackOff"
+      }
+    ]
+  },
+  {
+    "id": "q07",
+    "relevant_sections": [
+      {
+        "source": "crashloopbackoff.md",
+        "section": "Possible Causes of CrashLoopBackOff"
+      }
+    ]
+  },
+  {
+    "id": "q08",
+    "relevant_sections": [
+      {
+        "source": "crashloopbackoff.md",
+        "section": "Troubleshooting Missing ConfigMaps and Secrets"
+      },
+      {
+        "source": "crashloopbackoff.md",
+        "section": "Check for Missing Configuration References"
+      }
+    ]
+  },
+  {
+    "id": "q09",
+    "relevant_sections": [
+      {
+        "source": "database-connectivity.md",
+        "section": "4. Diagnose DNS Resolution"
+      }
+    ]
+  },
+  {
+    "id": "q10",
+    "relevant_sections": [
+      {
+        "source": "database-connectivity.md",
+        "section": "5. Test Network Connectivity"
+      }
+    ]
+  },
+  {
+    "id": "q11",
+    "relevant_sections": [
+      {
+        "source": "database-connectivity.md",
+        "section": "6. Verify Credentials and Authentication"
+      }
+    ]
+  },
+  {
+    "id": "q12",
+    "relevant_sections": [
+      {
+        "source": "oomkilled.md",
+        "section": "4. Inspect resource configuration"
+      }
+    ]
+  },
+  {
+    "id": "q13",
+    "relevant_sections": [
+      {
+        "source": "oomkilled.md",
+        "section": "3. Check current resource usage"
+      }
+    ]
+  },
+  {
+    "id": "q14",
+    "relevant_sections": [
+      {
+        "source": "database-connectivity.md",
+        "section": "7. Investigate Timeouts and Connection Limits"
+      }
+    ]
+  }
+]
