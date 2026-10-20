@@ -88,5 +88,11 @@
         "question": "How do I configure a Terraform remote backend and recover a stuck state lock?",
         "expected_documents": [],
         "answerable": false
+    },
+     {
+        "id": "q16",
+        "question": "My Kubernetes pod shows ImagePullBackOff. How do I diagnose and fix the image pull failure?",
+        "expected_documents": ["imagepullbackoff.md"],
+        "answerable": true
     }
 ]

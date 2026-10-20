@@ -122,5 +122,22 @@
         "section": "7. Investigate Timeouts and Connection Limits"
       }
     ]
+  },
+  {
+    "id": "q16",
+    "relevant_sections": [
+      {
+        "source": "imagepullbackoff.md",
+        "section": "Troubleshooting Steps"
+      },
+      {
+        "source": "imagepullbackoff.md",
+        "section": "Possible Causes"
+      },
+      {
+        "source": "imagepullbackoff.md",
+        "section": "Diagnostic Commands"
+      }
+    ]
   }
 ]
