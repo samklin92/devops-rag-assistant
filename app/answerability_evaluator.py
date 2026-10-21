@@ -67,7 +67,7 @@ def evaluate_answerability_retrieval(
             if answerable_results
             else None
         ),
-        "unanswerable_retrieval_rate": (
+        "unanswerable_document_retrieval_rate": (
             unanswerable_retrievals / len(unanswerable_results)
             if unanswerable_results
             else None

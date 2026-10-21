@@ -99,7 +99,7 @@ def summarize_evaluation(results: list[dict]) -> dict:
         else None
     )
 
-    unanswerable_retrieval_rate = (
+    unanswerable_document_retrieval_rate = (
         sum(
             bool(result["retrieved_documents"])
             for result in unanswerable_results
@@ -113,7 +113,7 @@ def summarize_evaluation(results: list[dict]) -> dict:
         "answerable_questions": len(answerable_results),
         "unanswerable_questions": len(unanswerable_results),
         "mean_recall": mean_recall,
-        "unanswerable_retrieval_rate": unanswerable_retrieval_rate,
+        "unanswerable_document_retrieval_rate": unanswerable_document_retrieval_rate,
     }
 
 def run_evaluation(
@@ -175,13 +175,13 @@ def run_evaluation(
     else:
         print("\nMean Recall: N/A (no answerable questions)")
 
-    if summary["unanswerable_retrieval_rate"] is not None:
+    if summary["unanswerable_document_retrieval_rate"] is not None:
         print(
-            "Unanswerable retrieval rate: "
-            f"{summary['unanswerable_retrieval_rate']:.2f}"
+            "Unanswerable document retrieval rate: "
+            f"{summary['unanswerable_document_retrieval_rate']:.2f}"
         )
     else:
-        print("Unanswerable retrieval rate: N/A")
+        print("Unanswerable document retrieval rate: N/A")
 
     print(
         f"Questions evaluated: {summary['total_questions']} "
@@ -208,16 +208,16 @@ def run_evaluation(
             for result in unanswerable_results
         )
 
-        unanswerable_retrieval_rate = (
+        unanswerable_document_retrieval_rate = (
             false_retrievals / len(unanswerable_results)
         )
 
         print(
-            "Unanswerable retrieval rate: "
-            f"{unanswerable_retrieval_rate:.2f}"
+            "Unanswerable document retrieval rate: "
+            f"{unanswerable_document_retrieval_rate:.2f}"
         )
     else:
-        print("Unanswerable retrieval rate: N/A")
+        print("Unanswerable document retrieval rate: N/A")
 
     return results
 

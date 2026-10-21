@@ -111,7 +111,7 @@ def test_summarize_evaluation_calculates_metrics():
     assert summary["answerable_questions"] == 2
     assert summary["unanswerable_questions"] == 2
     assert summary["mean_recall"] == 0.75
-    assert summary["unanswerable_retrieval_rate"] == 0.5
+    assert summary["unanswerable_document_retrieval_rate"] == 0.5
 
 
 def test_summarize_evaluation_handles_empty_results():
@@ -121,4 +121,4 @@ def test_summarize_evaluation_handles_empty_results():
     assert summary["answerable_questions"] == 0
     assert summary["unanswerable_questions"] == 0
     assert summary["mean_recall"] is None
-    assert summary["unanswerable_retrieval_rate"] is None
+    assert summary["unanswerable_document_retrieval_rate"] is None

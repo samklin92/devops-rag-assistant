@@ -120,13 +120,13 @@ def run_evaluation(min_scores: tuple[float, ...] = (0.50,)) -> None:
         print(f"Unanswerable questions: {summary['unanswerable_questions']}")
 
         success_rate = summary["answerable_retrieval_success_rate"]
-        unanswerable_rate = summary["unanswerable_retrieval_rate"]
+        unanswerable_rate = summary["unanswerable_document_retrieval_rate"]
 
         if success_rate is not None:
             print(f"Answerable retrieval success rate: {success_rate:.1%}")
 
         if unanswerable_rate is not None:
-            print(f"Unanswerable retrieval rate: {unanswerable_rate:.1%}")
+            print(f"Unanswerable document retrieval rate: {unanswerable_rate:.1%}")
 
 if __name__ == "__main__":
         run_evaluation(min_scores=(0.50, 0.45, 0.40))

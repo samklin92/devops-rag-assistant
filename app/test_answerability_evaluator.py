@@ -35,7 +35,7 @@ def test_evaluates_answerable_and_unanswerable_questions():
     assert result["answerable_questions"] == 2
     assert result["unanswerable_questions"] == 2
     assert result["answerable_retrieval_success_rate"] == 0.5
-    assert result["unanswerable_retrieval_rate"] == 0.5
+    assert result["unanswerable_document_retrieval_rate"] == 0.5
 
 
 def test_empty_results_return_none_rates():
@@ -46,7 +46,7 @@ def test_empty_results_return_none_rates():
         "answerable_questions": 0,
         "unanswerable_questions": 0,
         "answerable_retrieval_success_rate": None,
-        "unanswerable_retrieval_rate": None,
+        "unanswerable_document_retrieval_rate": None,
     }
 
 

@@ -34,12 +34,6 @@ The registry may reject image pull requests after a rate limit is reached.
 Inspect pod status and events:
 
 ```bash
-kubectl describe pod <pod-name> -n <namespace>
-## Diagnostic Commands
-
-Inspect pod status and events:
-
-```bash
 kubectl get pods -n <namespace>
 kubectl describe pod <pod-name> -n <namespace>
 kubectl get events -n <namespace> --sort-by=.metadata.creationTimestamp
@@ -57,7 +51,7 @@ Check the workload's image configuration:
 kubectl get deployment <deployment-name> -n <namespace> -o yaml
 ```
 
-Look for events such as `manifest unknown`, `unauthorized`, `pull access denied`, DNS failures, connection timeouts, or rate-limit errors.
+Look for events such as manifest unknown, unauthorized, pull access denied, DNS failures, connection timeouts, or rate-limit errors.
 
 ## Troubleshooting Steps
 

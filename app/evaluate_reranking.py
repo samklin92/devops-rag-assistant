@@ -154,7 +154,7 @@ def print_document_summary(label: str, summary: dict) -> None:
     print("-" * 60)
 
     success = summary["answerable_retrieval_success_rate"]
-    unanswerable = summary["unanswerable_retrieval_rate"]
+    unanswerable = summary["unanswerable_document_retrieval_rate"]
 
     print(
         f"Answerable retrieval success: {success:.1%}"
@@ -162,9 +162,9 @@ def print_document_summary(label: str, summary: dict) -> None:
         else "Answerable retrieval success: N/A"
     )
     print(
-        f"Unanswerable retrieval rate: {unanswerable:.1%}"
+        f"Unanswerable document retrieval rate: {unanswerable:.1%}"
         if unanswerable is not None
-        else "Unanswerable retrieval rate: N/A"
+        else "Unanswerable document retrieval rate: N/A"
     )
 
 

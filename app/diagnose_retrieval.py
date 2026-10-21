@@ -4,26 +4,9 @@ from app.vector_search import search_chunks
 
 QUESTIONS = [
     {
-        "id": "q07",
-        "question": (
-            "My container keeps restarting because its liveness "
-            "probe fails. What should I investigate?"
-        ),
-    },
-    {
-        "id": "q08",
-        "question": (
-            "What should I check if a Kubernetes application "
-            "references a missing ConfigMap or Secret?"
-        ),
-    },
-    {
-        "id": "q11",
-        "question": (
-            "How can I investigate database authentication "
-            "failures without exposing passwords?"
-        ),
-    },
+        "id": "q16",
+        "question": "My Kubernetes pod shows ImagePullBackOff. How do I diagnose and fix the image pull failure?",
+    }
 ]
 
 
