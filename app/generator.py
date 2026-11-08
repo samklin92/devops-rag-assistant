@@ -28,7 +28,7 @@ def generate_answer(
     retrieved_chunks: list[dict],
     client: anthropic.Anthropic,
     model: str = DEFAULT_MODEL,
-    max_tokens: int = 800,
+    max_tokens: int = 1500,
     max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS,
 ) -> str:
     """Generate an answer grounded in retrieved knowledge-base evidence."""

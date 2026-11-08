@@ -13,6 +13,7 @@ from app.tool_executor import (
     MAX_TOOL_CALLS,
     ToolDefinition,
     execute_tool,
+    execute_tool_async,
 )
 
 
@@ -164,7 +165,84 @@ def execute_diagnostic_tool_node(
         "actions_taken": agent_state.actions_taken,
         "tool_calls": agent_state.tool_calls,
     }
+async def execute_diagnostic_tool_node_async(
+    state: DevOpsGraphState,
+    tools: dict[str, Callable[..., Any] | ToolDefinition],
+    approved_actions: set[str] | None = None,
+) -> dict[str, Any]:
+    """Execute synchronous or asynchronous diagnostic tools."""
 
+    action = state["next_action"]
+
+    if not action:
+        return {
+            "status": "failed",
+            "next_action": None,
+        }
+
+    if state["tool_calls"] >= MAX_TOOL_CALLS:
+        return {
+            "status": "needs_review",
+            "next_action": None,
+        }
+
+    tool = tools.get(action)
+
+    if tool is None:
+        return {
+            "status": "blocked",
+            "next_action": None,
+        }
+
+    approved = approved_actions is not None and action in approved_actions
+
+    agent_state = AgentState(
+        task=state["task"],
+        task_id=state["task_id"],
+        status=state["status"],
+        findings=list(state["findings"]),
+        actions_taken=list(state["actions_taken"]),
+        knowledge=list(state["knowledge"]),
+        tool_calls=state["tool_calls"],
+        next_action=action,
+    )
+
+    result = await execute_tool_async(
+        state=agent_state,
+        tool_name=action,
+        tool=tool,
+        approved=approved,
+    )
+
+    if not result["success"]:
+        if not result.get("blocked"):
+            agent_state.findings.append(
+                {
+                    "tool": action,
+                    "result": {
+                        "error": result.get(
+                            "error",
+                            "Unknown tool execution error.",
+                        ),
+                        "execution_failed": True,
+                    },
+                }
+            )
+
+        return {
+            "status": "blocked" if result.get("blocked") else "failed",
+            "findings": agent_state.findings,
+            "actions_taken": agent_state.actions_taken,
+            "tool_calls": agent_state.tool_calls,
+            "next_action": None,
+        }
+
+    return {
+        "status": "running",
+        "findings": agent_state.findings,
+        "actions_taken": agent_state.actions_taken,
+        "tool_calls": agent_state.tool_calls,
+    }
 
 def evaluate_evidence_node(
     state: DevOpsGraphState,
@@ -291,6 +369,66 @@ def build_devops_graph(
     workflow.add_edge("execute_tool", "evaluate_evidence")
 
     # Route based on investigation results.
+    workflow.add_conditional_edges(
+        "evaluate_evidence",
+        route_after_evaluation,
+        {
+            "continue": "select_action",
+            "stop": "generate_response",
+        },
+    )
+
+    workflow.add_edge("generate_response", END)
+
+    return workflow.compile()
+
+def build_devops_graph_async(
+    embedding_model: Any,
+    tools: dict[str, Callable[..., Any] | ToolDefinition],
+    client: Any,
+    approved_actions: set[str] | None = None,
+):
+    """Build a LangGraph workflow that supports asynchronous tools."""
+
+    workflow = StateGraph(DevOpsGraphState)
+
+    async def execute_tool_node(state: DevOpsGraphState):
+        return await execute_diagnostic_tool_node_async(
+            state,
+            tools,
+            approved_actions,
+        )
+
+    workflow.add_node(
+        "retrieve_knowledge",
+        lambda state: retrieve_knowledge_node(state, embedding_model),
+    )
+
+    workflow.add_node(
+        "select_action",
+        select_diagnostic_action_node,
+    )
+
+    workflow.add_node(
+        "execute_tool",
+        execute_tool_node,
+    )
+
+    workflow.add_node(
+        "evaluate_evidence",
+        evaluate_evidence_node,
+    )
+
+    workflow.add_node(
+        "generate_response",
+        lambda state: generate_final_response_node(state, client),
+    )
+
+    workflow.add_edge(START, "retrieve_knowledge")
+    workflow.add_edge("retrieve_knowledge", "select_action")
+    workflow.add_edge("select_action", "execute_tool")
+    workflow.add_edge("execute_tool", "evaluate_evidence")
+
     workflow.add_conditional_edges(
         "evaluate_evidence",
         route_after_evaluation,
